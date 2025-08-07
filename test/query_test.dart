@@ -569,6 +569,42 @@ main() {
         newYorkDateTime(2000, 10, 13, 9),
       ]
     ),
+    (
+      rruleString: 'DTSTART;TZID=America/New_York:19970902T090000\n'
+          'RDATE;TZID=America/New_York:19970902T090000\n'
+          'RRULE:FREQ=MONTHLY;BYDAY=FR;BYMONTHDAY=13;COUNT=5', // Added COUNT for easier testing
+      expected: [
+        // ==> (1997 9:00 AM EDT) September 2 (from RDATE)
+        // ==> (1998 9:00 AM EST) February 13;March 13;November 13
+        //     (1999 9:00 AM EDT) August 13
+        //     (2000 9:00 AM EDT) October 13
+        //            ...
+        newYorkDateTime(1997, 9, 2, 9),
+        newYorkDateTime(1998, 2, 13, 9),
+        newYorkDateTime(1998, 3, 13, 9),
+        newYorkDateTime(1998, 11, 13, 9),
+        newYorkDateTime(1999, 8, 13, 9),
+        newYorkDateTime(2000, 10, 13, 9),
+      ]
+    ),
+    (
+      rruleString: 'DTSTART;TZID=America/New_York:19970902T090000\n'
+          'RDATE;TZID=America/New_York:19970902T090000,19980213T090000\n'
+          'RRULE:FREQ=MONTHLY;BYDAY=FR;BYMONTHDAY=13;COUNT=5', // Added COUNT for easier testing
+      expected: [
+        // ==> (1997 9:00 AM EDT) September 2 (from RDATE)
+        // ==> (1998 9:00 AM EST) February 13;March 13;November 13
+        //     (1999 9:00 AM EDT) August 13
+        //     (2000 9:00 AM EDT) October 13
+        //            ...
+        newYorkDateTime(1997, 9, 2, 9),
+        newYorkDateTime(1998, 2, 13, 9),
+        newYorkDateTime(1998, 3, 13, 9),
+        newYorkDateTime(1998, 11, 13, 9),
+        newYorkDateTime(1999, 8, 13, 9),
+        newYorkDateTime(2000, 10, 13, 9),
+      ]
+    ),
   ];
 
   for (var data in testData) {

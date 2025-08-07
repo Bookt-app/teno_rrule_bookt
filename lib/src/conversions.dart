@@ -47,7 +47,16 @@ extension RecurrenceRuleToRFC5545String on RecurrenceRule {
       rules.add('WKST=${WeekDay(weekStart!).toString()}');
     }
 
-    return '${_dtStartString(startDate, isLocal)}\n${isNotEmpty(excludedDates) ? '${_exDateString(excludedDates!, isLocal)}\n' : ''}RRULE:${rules.join(';')}';
+    final result = <String>[];
+    result.add(_dtStartString(startDate, isLocal));
+    result.add('RRULE:${rules.join(';')}');
+    if (isNotEmpty(excludedDates)) {
+      result.add(_exDateString(excludedDates!, isLocal));
+    }
+    if (isNotEmpty(includedDates)) {
+      result.add(_rDateString(includedDates!, isLocal));
+    }
+    return result.join('\n');
   }
 }
 
@@ -55,28 +64,36 @@ String _exDateString(Set<DateTime> excludedDates, bool isLocal) {
   if (isLocal) {
     return 'EXDATE:${excludedDates.map(_dateTimeToRFC5545String).join(',')}';
   }
-  if (excludedDates.fold(
-      true, (previousValue, element) => previousValue && element.isUtc)) {
+  if (excludedDates.fold(true, (previousValue, element) => previousValue && element.isUtc)) {
     return 'EXDATE:${excludedDates.map((e) => '${_dateTimeToRFC5545String(e)}Z').join(',')}';
   }
   final firstOffset = excludedDates.first.timeZoneOffset;
-  if (excludedDates.fold(
-      true,
-      (previousValue, element) =>
-          previousValue &&
-          element is TZDateTime &&
-          element.timeZoneOffset == firstOffset)) {
+  if (excludedDates.fold(true, (previousValue, element) => previousValue && element is TZDateTime && element.timeZoneOffset == firstOffset)) {
     return 'EXDATE;TZID=${(excludedDates.first as TZDateTime).location.name}:${excludedDates.map(_dateTimeToRFC5545String).join(',')}';
   }
-  if (excludedDates.fold(
-      true,
-      (previousValue, element) =>
-          previousValue && element.timeZoneOffset == firstOffset)) {
+  if (excludedDates.fold(true, (previousValue, element) => previousValue && element.timeZoneOffset == firstOffset)) {
     final timezoneId = getTimezoneId(excludedDates.first);
     return 'EXDATE;TZID=$timezoneId:${excludedDates.map(_dateTimeToRFC5545String).join(',')}';
   }
-  throw UnsupportedError(
-      'Unsupported non local DateTimes with different timezone');
+  throw UnsupportedError('Unsupported non local DateTimes with different timezone');
+}
+
+String _rDateString(Set<DateTime> includedDates, bool isLocal) {
+  if (isLocal) {
+    return 'RDATE:${includedDates.map(_dateTimeToRFC5545String).join(',')}';
+  }
+  if (includedDates.fold(true, (previousValue, element) => previousValue && element.isUtc)) {
+    return 'RDATE:${includedDates.map((e) => '${_dateTimeToRFC5545String(e)}Z').join(',')}';
+  }
+  final firstOffset = includedDates.first.timeZoneOffset;
+  if (includedDates.fold(true, (previousValue, element) => previousValue && element is TZDateTime && element.timeZoneOffset == firstOffset)) {
+    return 'RDATE;TZID=${(includedDates.first as TZDateTime).location.name}:${includedDates.map(_dateTimeToRFC5545String).join(',')}';
+  }
+  if (includedDates.fold(true, (previousValue, element) => previousValue && element.timeZoneOffset == firstOffset)) {
+    final timezoneId = getTimezoneId(includedDates.first);
+    return 'RDATE;TZID=$timezoneId:${includedDates.map(_dateTimeToRFC5545String).join(',')}';
+  }
+  throw UnsupportedError('Unsupported non local DateTimes with different timezone');
 }
 
 RecurrenceRule? parseRFC5545String(String rfc5545string) {
@@ -84,6 +101,7 @@ RecurrenceRule? parseRFC5545String(String rfc5545string) {
   DateTime? startDate;
   bool? isLocal;
   RecurrenceRule? rrule;
+  Set<DateTime>? includedDates;
   Set<DateTime>? excludedDates;
   for (String line in lines) {
     final header = _inspectHeader(line);
@@ -98,22 +116,40 @@ RecurrenceRule? parseRFC5545String(String rfc5545string) {
       case 'EXDATE':
         excludedDates = _parseExDates(line);
         break;
+      case 'RDATE':
+        includedDates = _parseRDates(line);
+        break;
       case 'DTSTART':
         final parsedResult = _parseStartDate(line);
         startDate = parsedResult?.$1;
         isLocal = parsedResult?.$2;
         break;
       default:
-        throw UnsupportedError(
-            'Unsupported header of $header in rfc5545 string');
+        throw UnsupportedError('Unsupported header of $header in rfc5545 string');
     }
   }
-  return rrule?.copyWith(
-      startDate: startDate, isLocal: isLocal, excludedDates: excludedDates);
+  return rrule?.copyWith(startDate: startDate, isLocal: isLocal, includedDates: includedDates, excludedDates: excludedDates);
 }
 
 Set<DateTime>? _parseExDates(String line) {
   final regex = RegExp(r'EXDATE(?:;TZID=([^:=]+?))?[:=]([^;\s]+)');
+  final match = regex.firstMatch(line);
+  final tzId = match?[1];
+  final listDateTimes = match?[2];
+  if (listDateTimes == null) {
+    return null;
+  }
+  return listDateTimes.split(',').map((dateTimeString) {
+    final localDateTime = DateTime.parse(dateTimeString);
+    if (tzId == null) {
+      return localDateTime;
+    }
+    return toTZDateTime(getLocation(tzId), localDateTime);
+  }).toSet();
+}
+
+Set<DateTime>? _parseRDates(String line) {
+  final regex = RegExp(r'RDATE(?:;TZID=([^:=]+?))?[:=]([^;\s]+)');
   final match = regex.firstMatch(line);
   final tzId = match?[1];
   final listDateTimes = match?[2];
@@ -147,9 +183,7 @@ String? _inspectHeader(String line) {
   if (localDateTime.isUtc) {
     return (localDateTime, false);
   }
-  return tzId == null
-      ? (localDateTime, true)
-      : (toTZDateTime(getLocation(tzId), localDateTime), false);
+  return tzId == null ? (localDateTime, true) : (toTZDateTime(getLocation(tzId), localDateTime), false);
 }
 
 RecurrenceRule _parseRRule(String line) {
@@ -178,10 +212,8 @@ RecurrenceRule _parseRRule(String line) {
     final value = pair[1];
     switch (key.toUpperCase()) {
       case 'FREQ':
-        frequency = Frequency.values.firstWhere(
-            (element) => element.value == value,
-            orElse: () =>
-                throw ParseException('Unsupported FREQ value: $value', value));
+        frequency =
+            Frequency.values.firstWhere((element) => element.value == value, orElse: () => throw ParseException('Unsupported FREQ value: $value', value));
         break;
       case 'WKST':
         weekStart = WeekDay.fromString(value).weekDay;

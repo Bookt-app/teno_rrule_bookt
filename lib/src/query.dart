@@ -40,11 +40,11 @@ extension InstancesQuery on RecurrenceRule {
         ? effectiveEnd.endOf(Unit.week, weekStart)
         : effectiveEnd;
 
+    // Remove effectiveCount logic and early returns
     final results = <DateTime>[];
     DateTime instance = cloneWith(startDate);
 
-    int effectiveCount = count ?? -1;
-    // does not include until
+    // Generate all RRULE instances in range
     while (instance.isBeforeUnit(candidateEnd, unit: Unit.second)) {
       // before range.
       if (instance.isBeforeUnit(effectiveBegin, unit: Unit.second)) {
@@ -62,8 +62,7 @@ extension InstancesQuery on RecurrenceRule {
 
         // filter for until
         if (element.isBeforeUnit(effectiveEnd, unit: Unit.second)) {
-          // I understand that the EXDATE is applied after RRULE, if so
-          // we don't add the element to final result, but still count it.
+          // EXDATE exclusion
           if (isEmpty(excludedDates) ||
               !excludedDates!.fold(
                   false,
@@ -72,14 +71,29 @@ extension InstancesQuery on RecurrenceRule {
                       exDate.isSameUnit(element, unit: Unit.day))) {
             results.add(element);
           }
-          effectiveCount--;
-          if (effectiveCount == 0) {
-            return results;
-          }
         }
       }
 
       instance = _getNextInstance(instance, frequency, interval);
+    }
+
+    // Merge includedDates (RDATE) before applying COUNT, deduplicate, and sort
+    if (isNotEmpty(includedDates)) {
+      for (final rdate in includedDates!) {
+        // Only add if not excluded and not already present (by isAtSameMomentAs)
+        if ((isEmpty(excludedDates) ||
+                !excludedDates!.any((ex) => ex.isAtSameMomentAs(rdate))) &&
+            !results.any((d) => d.isAtSameMomentAs(rdate)) &&
+            rdate.isAfter(effectiveBegin) &&
+            rdate.isBefore(effectiveEnd)) {
+          results.add(rdate);
+        }
+      }
+    }
+    results.sort();
+    // Apply COUNT limit if needed
+    if (count != null && results.length > count!) {
+      return results.take(count!).toList();
     }
     return results;
   }
