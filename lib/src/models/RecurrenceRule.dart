@@ -48,10 +48,8 @@ class RecurrenceRule extends Equatable {
     // The INTERVAL rule part contains a positive integer representing at
     //       which intervals the recurrence rule repeats.
     assert(interval > 0);
-    assert(endDate == null || count == null,
-        'UNTIL and COUNT MUST NOT occur in the same RRULE');
-    assert(weekStart == null ||
-        (weekStart! >= DateTime.monday && weekStart! <= DateTime.sunday));
+    assert(endDate == null || count == null, 'UNTIL and COUNT MUST NOT occur in the same RRULE');
+    assert(weekStart == null || (weekStart! >= DateTime.monday && weekStart! <= DateTime.sunday));
     // The value of the UNTIL rule part MUST have the same
     //       value type as the "DTSTART" property.  Furthermore, if the
     //       "DTSTART" property is specified as a date with local time, then
@@ -59,8 +57,7 @@ class RecurrenceRule extends Equatable {
     //       time.  If the "DTSTART" property is specified as a date with UTC
     //       time or a date with local time and time zone reference, then the
     //       UNTIL rule part MUST be specified as a date with UTC time.
-    assert(isLocal == true || endDate == null || endDate!.isUtc,
-        'required UTC value for non-local rrule');
+    assert(isLocal == true || endDate == null || endDate!.isUtc, 'required UTC value for non-local rrule');
 
     //    +----------+--------+--------+-------+-------+------+-------+------+
     //    |          |SECONDLY|MINUTELY|HOURLY |DAILY  |WEEKLY|MONTHLY|YEARLY|
@@ -74,10 +71,7 @@ class RecurrenceRule extends Equatable {
     //    +----------+--------+--------+-------+-------+------+-------+------+
     //    |BYYEARDAY |Limit   |Limit   |Limit  |N/A    |N/A   |N/A    |Expand|
     //    +----------+--------+--------+-------+-------+------+-------+------+
-    assert(byYearDays == null ||
-        (frequency != Frequency.daily &&
-            frequency != Frequency.weekly &&
-            frequency != Frequency.monthly));
+    assert(byYearDays == null || (frequency != Frequency.daily && frequency != Frequency.weekly && frequency != Frequency.monthly));
 
     //    +----------+--------+--------+-------+-------+------+-------+------+
     //    |          |SECONDLY|MINUTELY|HOURLY |DAILY  |WEEKLY|MONTHLY|YEARLY|
@@ -118,6 +112,125 @@ class RecurrenceRule extends Equatable {
         byHours: byHours ?? this.byHours,
         byMonths: byMonths ?? this.byMonths,
         byWeekDays: byWeekDays ?? this.byWeekDays,
+        byMonthDays: byMonthDays ?? this.byMonthDays,
+        byYearDays: byYearDays ?? this.byYearDays,
+        byWeeks: byWeeks ?? this.byWeeks,
+        bySetPositions: bySetPositions ?? this.bySetPositions,
+        weekStart: weekStart ?? this.weekStart,
+        excludedDates: excludedDates ?? this.excludedDates,
+        includedDates: includedDates ?? this.includedDates);
+  }
+
+  /// Creates a new RecurrenceRule with count set to null
+  RecurrenceRule removeCountAndCopyWith(
+      {Frequency? frequency,
+      DateTime? startDate,
+      bool? isLocal,
+      DateTime? endDate,
+      int? interval,
+      Set<int>? bySeconds,
+      Set<int>? byMinutes,
+      Set<int>? byHours,
+      Set<int>? byMonths,
+      Set<WeekDay>? byWeekDays,
+      Set<int>? byMonthDays,
+      Set<int>? byYearDays,
+      Set<int>? byWeeks,
+      Set<int>? bySetPositions,
+      int? weekStart,
+      Set<DateTime>? excludedDates,
+      Set<DateTime>? includedDates}) {
+    return RecurrenceRule(
+        frequency: frequency ?? this.frequency,
+        startDate: startDate ?? this.startDate,
+        isLocal: isLocal ?? this.isLocal,
+        endDate: endDate ?? this.endDate,
+        interval: interval ?? this.interval,
+        count: null,
+        bySeconds: bySeconds ?? this.bySeconds,
+        byMinutes: byMinutes ?? this.byMinutes,
+        byHours: byHours ?? this.byHours,
+        byMonths: byMonths ?? this.byMonths,
+        byWeekDays: byWeekDays ?? this.byWeekDays,
+        byMonthDays: byMonthDays ?? this.byMonthDays,
+        byYearDays: byYearDays ?? this.byYearDays,
+        byWeeks: byWeeks ?? this.byWeeks,
+        bySetPositions: bySetPositions ?? this.bySetPositions,
+        weekStart: weekStart ?? this.weekStart,
+        excludedDates: excludedDates ?? this.excludedDates,
+        includedDates: includedDates ?? this.includedDates);
+  }
+
+  /// Creates a new RecurrenceRule with endDate set to null
+  RecurrenceRule removeEndDateAndCopyWith(
+      {Frequency? frequency,
+      DateTime? startDate,
+      bool? isLocal,
+      int? interval,
+      int? count,
+      Set<int>? bySeconds,
+      Set<int>? byMinutes,
+      Set<int>? byHours,
+      Set<int>? byMonths,
+      Set<WeekDay>? byWeekDays,
+      Set<int>? byMonthDays,
+      Set<int>? byYearDays,
+      Set<int>? byWeeks,
+      Set<int>? bySetPositions,
+      int? weekStart,
+      Set<DateTime>? excludedDates,
+      Set<DateTime>? includedDates}) {
+    return RecurrenceRule(
+        frequency: frequency ?? this.frequency,
+        startDate: startDate ?? this.startDate,
+        isLocal: isLocal ?? this.isLocal,
+        endDate: null,
+        interval: interval ?? this.interval,
+        count: count ?? this.count,
+        bySeconds: bySeconds ?? this.bySeconds,
+        byMinutes: byMinutes ?? this.byMinutes,
+        byHours: byHours ?? this.byHours,
+        byMonths: byMonths ?? this.byMonths,
+        byWeekDays: byWeekDays ?? this.byWeekDays,
+        byMonthDays: byMonthDays ?? this.byMonthDays,
+        byYearDays: byYearDays ?? this.byYearDays,
+        byWeeks: byWeeks ?? this.byWeeks,
+        bySetPositions: bySetPositions ?? this.bySetPositions,
+        weekStart: weekStart ?? this.weekStart,
+        excludedDates: excludedDates ?? this.excludedDates,
+        includedDates: includedDates ?? this.includedDates);
+  }
+
+  RecurrenceRule removeByWeekDaysAndCopyWith(
+      {Frequency? frequency,
+      DateTime? startDate,
+      bool? isLocal,
+      DateTime? endDate,
+      int? interval,
+      int? count,
+      Set<int>? bySeconds,
+      Set<int>? byMinutes,
+      Set<int>? byHours,
+      Set<int>? byMonths,
+      Set<int>? byMonthDays,
+      Set<int>? byYearDays,
+      Set<int>? byWeeks,
+      Set<int>? bySetPositions,
+      int? weekStart,
+      Set<DateTime>? excludedDates,
+      Set<DateTime>? includedDates}) {
+    return RecurrenceRule(
+        frequency: frequency ?? this.frequency,
+        startDate: startDate ?? this.startDate,
+        isLocal: isLocal ?? this.isLocal,
+        endDate: endDate ?? this.endDate,
+        interval: interval ?? this.interval,
+        count: count ?? this.count,
+        bySeconds: bySeconds ?? this.bySeconds,
+        byMinutes: byMinutes ?? this.byMinutes,
+        byHours: byHours ?? this.byHours,
+        byMonths: byMonths ?? this.byMonths,
+        byWeekDays: null,
         byMonthDays: byMonthDays ?? this.byMonthDays,
         byYearDays: byYearDays ?? this.byYearDays,
         byWeeks: byWeeks ?? this.byWeeks,
